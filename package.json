@@ -1,6 +1,6 @@
 {
   "name": "tfcleaner",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Interactive CLI to find and safely clean Terraform/Terragrunt generated files (.terraform, .terragrunt-cache, lock files) and reclaim disk space.",
   "keywords": [
     "terraform",
