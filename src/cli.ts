@@ -10,7 +10,7 @@ import ora from 'ora';
 import { loadConfig } from './config.js';
 import { scan, groupByProject, totalSize } from './scanner.js';
 import { clean } from './cleaner.js';
-import { formatBytes } from './size.js';
+import { formatBytes, formatAge } from './size.js';
 import { App } from './ui.js';
 import type { CleanItem } from './types.js';
 
@@ -53,7 +53,7 @@ function printFindings(items: CleanItem[]): void {
       console.log(
         `  ${label} ${chalk.cyan(formatBytes(item.size).padStart(9))}  ${chalk.dim(
           `${item.files} files`,
-        )}`,
+        )}  ${chalk.dim(`updated ${formatAge(item.mtimeMs)}`)}`,
       );
     }
     console.log('');

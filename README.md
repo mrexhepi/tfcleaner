@@ -8,26 +8,36 @@ eat tens of gigabytes. `tfcleaner` scans your machine, shows you exactly how muc
 each one is costing you, and lets you wipe them with a keystroke — without ever
 touching your `.tf` source, `.tfvars`, or state files.
 
-```
-npx tfcleaner
+## Install
+
+```bash
+npm i -g tfcleaner
 ```
 
-No global install required.
+Then just run:
+
+```bash
+tfcleaner
+```
+
+and the interactive UI opens.
+
+> Prefer not to install? Run it on demand with `npx tfcleaner` — no global install required.
 
 ## Quick start
 
 ```bash
 # Interactive TUI (lazygit / ncdu style)
-npx tfcleaner
+tfcleaner
 
 # Just list what's reclaimable
-npx tfcleaner scan
+tfcleaner scan
 
 # Delete everything found (asks for confirmation)
-npx tfcleaner clean --all
+tfcleaner clean --all
 
 # See what would be removed, change nothing
-npx tfcleaner clean --dry-run
+tfcleaner clean --dry-run
 ```
 
 ## Screenshot
@@ -83,7 +93,7 @@ Reclaimable: 12.8 GB   Selected: 2 item(s) 6.3 GB
 | `g` / `G` (or PageUp / PageDown) | Jump to first / last item |
 | `space` | Select / deselect item |
 | `a` | Select all / none |
-| `c` | Clean selected — deletes in place and marks rows as deleted |
+| `c` | Clean selected — press once to arm (shows a warning), press `c` again to confirm. Deletes in place and marks rows as deleted. Any other key cancels. |
 | `q` | Quit |
 
 ## What it finds

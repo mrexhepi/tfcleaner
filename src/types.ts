@@ -18,6 +18,8 @@ export interface CleanItem {
   size: number;
   /** Number of files contained (1 for a single file) */
   files: number;
+  /** Newest modification time within the item (ms epoch), 0 if unknown */
+  mtimeMs: number;
   /** The project/group this item belongs to (parent directory of interest) */
   group: string;
 }

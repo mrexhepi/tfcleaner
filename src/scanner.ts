@@ -95,6 +95,7 @@ export async function scan(
         kind,
         size: 0,
         files: isDir ? 0 : 1,
+        mtimeMs: 0,
         group: path.dirname(normalized),
       });
     }
@@ -113,6 +114,7 @@ export async function scan(
         const info = await getSizeInfo(item.path);
         item.size = info.size;
         item.files = info.files;
+        item.mtimeMs = info.mtimeMs;
       }),
     );
   }

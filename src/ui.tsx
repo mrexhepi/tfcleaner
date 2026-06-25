@@ -11,7 +11,7 @@ import type { TfCleanConfig } from './config.js';
 import type { CleanItem, ItemKind } from './types.js';
 import { scan, groupByProject, totalSize } from './scanner.js';
 import { clean } from './cleaner.js';
-import { formatBytes } from './size.js';
+import { formatBytes, formatAge } from './size.js';
 
 interface AppProps {
   config: TfCleanConfig;
@@ -123,6 +123,8 @@ export function App({
   const [cleaningPaths, setCleaningPaths] = useState<Set<string>>(new Set());
   const [freed, setFreed] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Two-step delete: first `c` arms, second `c` confirms.
+  const [confirming, setConfirming] = useState(false);
 
   // Spinner animation while loading or cleaning.
   useEffect(() => {
@@ -139,6 +141,13 @@ export function App({
       process.stdout.off('resize', onResize);
     };
   }, []);
+
+  // Auto-cancel an armed delete confirmation after a few seconds of inaction.
+  useEffect(() => {
+    if (!confirming) return;
+    const id = setTimeout(() => setConfirming(false), 5000);
+    return () => clearTimeout(id);
+  }, [confirming]);
 
   const width = contentWidth(cols);
 
@@ -245,6 +254,7 @@ export function App({
     const targets = selectedItems;
     if (targets.length === 0) return;
 
+    setConfirming(false);
     setBusy(true);
     setCleaningPaths(new Set(targets.map((t) => t.path)));
 
@@ -292,13 +302,30 @@ export function App({
     }
     if (busy) return; // ignore edits while a clean is running
 
+    // Two-step delete: first `c` arms confirmation, second `c` commits.
+    if (input.toLowerCase() === 'c') {
+      if (selectedItems.length === 0) return;
+      if (confirming) {
+        setConfirming(false);
+        void cleanSelected();
+      } else {
+        setConfirming(true);
+      }
+      return;
+    }
+
+    // Any other key cancels a pending confirmation.
+    if (confirming) {
+      setConfirming(false);
+      if (key.escape) return; // Esc only cancels; don't also act
+    }
+
     if (key.upArrow || input === 'k') moveCursor(-1);
     else if (key.downArrow || input === 'j') moveCursor(1);
     else if (key.pageUp || input === 'g') goToEdge('first');
     else if (key.pageDown || input === 'G') goToEdge('last');
     else if (input === ' ') toggleSelect();
     else if (input.toLowerCase() === 'a') selectAll();
-    else if (input.toLowerCase() === 'c') void cleanSelected();
   });
 
   if (!isRawModeSupported) {
@@ -343,8 +370,10 @@ export function App({
     liveItems.length > 0 && selected.size === liveItems.length;
   const noneLeft = items.length > 0 && liveItems.length === 0;
 
+  const borderColor = confirming ? 'red' : busy ? 'yellow' : 'cyan';
+
   return (
-    <Panel borderColor={busy ? 'yellow' : 'cyan'} width={width}>
+    <Panel borderColor={borderColor} width={width}>
       <Box justifyContent="space-between" width={width}>
         <Text color="cyan" bold>
           ⬢ Terraform Cleaner
@@ -421,6 +450,16 @@ export function App({
         </Box>
       )}
 
+      {confirming && (
+        <Box marginTop={1}>
+          <Text color="red" bold>
+            ⚠ Delete {selected.size} item(s) · {formatBytes(selectedBytes)}?{' '}
+          </Text>
+          <Text color="yellow" bold>press c again</Text>
+          <Text dimColor> to confirm · any other key cancels</Text>
+        </Box>
+      )}
+
       {/* Footer / keybar */}
       <Box
         width={width}
@@ -435,7 +474,8 @@ export function App({
         <Text dimColor wrap="truncate">
           <Key k="↑↓" d="move" /> <Key k="g/G" d="ends" />{' '}
           <Key k="space" d={allLiveSelected ? 'none' : 'pick'} />{' '}
-          <Key k="a" d="all" /> <Key k="c" d="clean" /> <Key k="q" d="quit" />
+          <Key k="a" d="all" /> <Key k="c" d={confirming ? 'confirm' : 'clean'} />{' '}
+          <Key k="q" d="quit" />
         </Text>
       </Box>
     </Panel>
@@ -506,6 +546,7 @@ function ItemLine({
   const name = fit(meta.label, 19);
   const size = formatBytes(item.size).padStart(8);
   const files = `${item.files}f`;
+  const age = formatAge(item.mtimeMs).padStart(4);
 
   if (status === 'deleted') {
     return (
@@ -540,7 +581,7 @@ function ItemLine({
 
   if (isCursor) {
     const line = fit(
-      ` ${pointer} ${checkbox} ${meta.icon} ${name} ${bar} ${size}  ${files}`,
+      ` ${pointer} ${checkbox} ${meta.icon} ${name} ${bar} ${size}  ${files.padEnd(6)} ${age}`,
       width,
     );
     return (
@@ -562,7 +603,8 @@ function ItemLine({
       <Text color={meta.color} dimColor={!isSelected}>{bar}</Text>
       {' '}
       <Text color="cyan">{size}</Text>
-      <Text dimColor>  {files}</Text>
+      <Text dimColor>  {files.padEnd(6)} </Text>
+      <Text dimColor>{age}</Text>
     </Text>
   );
 }
