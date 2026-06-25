@@ -2,6 +2,7 @@
  * CLI entry point for tfcleaner. Defines commands with commander and wires up
  * the scanner, cleaner and interactive UI.
  */
+import { createRequire } from 'node:module';
 import React from 'react';
 import { render } from 'ink';
 import { Command } from 'commander';
@@ -14,7 +15,11 @@ import { formatBytes, formatAge } from './size.js';
 import { App } from './ui.js';
 import type { CleanItem } from './types.js';
 
-const VERSION = '1.0.0';
+// Read the version from package.json at runtime so it never drifts from the
+// published version. dist/cli.js -> ../package.json is the package root.
+const require = createRequire(import.meta.url);
+const VERSION: string = (require('../package.json') as { version: string })
+  .version;
 
 interface CommonOpts {
   path?: string[];
