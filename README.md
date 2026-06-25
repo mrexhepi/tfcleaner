@@ -56,9 +56,6 @@ Reclaimable: 12.8 GB   Selected: 2 item(s) 6.3 GB
 
 ↑/↓ navigate · space select · a select all · c clean selected · q quit
 ```
-
-> _GIF placeholder — record a short demo of the TUI here._
-
 ## Commands
 
 | Command | Description |
