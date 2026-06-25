@@ -1,0 +1,4 @@
+{
+  "paths": ["~/projects", "~/workspace"],
+  "ignore": [".git", "node_modules", "vendor", "dist", "build"]
+}
