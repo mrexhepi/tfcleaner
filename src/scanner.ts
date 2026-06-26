@@ -10,30 +10,23 @@ import type { CleanItem, ItemKind, ProjectGroup } from './types.js';
 import { getSizeInfo } from './size.js';
 
 export interface ScanOptions {
-  /** Include .terraform.lock.hcl files in results. */
-  includeLockFiles?: boolean;
   /** Compute sizes (can be slow). Defaults to true. */
   computeSizes?: boolean;
   /** Drop items smaller than this many bytes from the results. Defaults to 0. */
   minSize?: number;
 }
 
+// Only ever target generated directories. Lock files (.terraform.lock.hcl)
+// are deliberately never matched — they must never be deleted.
 const TARGET_DIRS: Record<string, ItemKind> = {
   '.terragrunt-cache': 'terragrunt-cache',
   '.terraform': 'terraform',
 };
 
-const LOCK_FILE = '.terraform.lock.hcl';
-
 /** Map a discovered absolute path to an item kind, or null if not a target. */
-function classify(
-  absPath: string,
-  isDir: boolean,
-  includeLockFiles: boolean,
-): ItemKind | null {
+function classify(absPath: string, isDir: boolean): ItemKind | null {
   const base = path.basename(absPath);
   if (isDir && base in TARGET_DIRS) return TARGET_DIRS[base];
-  if (!isDir && base === LOCK_FILE && includeLockFiles) return 'lock-file';
   return null;
 }
 
@@ -44,16 +37,11 @@ export async function scan(
   config: TfCleanConfig,
   options: ScanOptions = {},
 ): Promise<CleanItem[]> {
-  const {
-    includeLockFiles = false,
-    computeSizes = true,
-    minSize = 0,
-  } = options;
+  const { computeSizes = true, minSize = 0 } = options;
 
-  // Build glob patterns. We match the target directories and the lock file.
+  // Build glob patterns — only the generated target directories.
   const dirNames = Object.keys(TARGET_DIRS);
   const patterns = dirNames.map((d) => `**/${d}`);
-  if (includeLockFiles) patterns.push(`**/${LOCK_FILE}`);
 
   const ignore = config.ignore.map((d) => `**/${d}/**`);
 
@@ -85,7 +73,7 @@ export async function scan(
         continue;
       }
 
-      const kind = classify(normalized, isDir, includeLockFiles);
+      const kind = classify(normalized, isDir);
       if (!kind) continue;
 
       found.set(normalized, {

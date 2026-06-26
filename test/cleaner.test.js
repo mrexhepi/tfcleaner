@@ -53,51 +53,37 @@ test('clean actually removes target items', async () => {
   }
 });
 
-test('assertSafe refuses protected and non-target paths', () => {
+test('assertSafe refuses protected, lock and non-target paths', () => {
+  const base = { kind: 'terraform', size: 1, files: 1, mtimeMs: 0, group: '/x' };
+
+  // State file (protected).
+  assert.throws(() =>
+    assertSafe({ ...base, name: 'terraform.tfstate', path: '/x/terraform.tfstate', isDir: false }),
+  );
+  // Source file.
+  assert.throws(() =>
+    assertSafe({ ...base, name: 'main.tf', path: '/x/main.tf', isDir: false }),
+  );
+  // Lock file must never be deletable.
   assert.throws(() =>
     assertSafe({
-      name: 'terraform.tfstate',
-      path: '/x/terraform.tfstate',
+      ...base,
+      name: '.terraform.lock.hcl',
+      path: '/x/.terraform.lock.hcl',
       isDir: false,
-      kind: 'lock-file',
-      size: 1,
-      files: 1,
-      group: '/x',
     }),
   );
+  // Any file at all is refused (only directories are allowed).
   assert.throws(() =>
-    assertSafe({
-      name: 'main.tf',
-      path: '/x/main.tf',
-      isDir: false,
-      kind: 'lock-file',
-      size: 1,
-      files: 1,
-      group: '/x',
-    }),
+    assertSafe({ ...base, name: 'whatever.bin', path: '/x/whatever.bin', isDir: false }),
   );
+  // Non-target directory.
   assert.throws(() =>
-    assertSafe({
-      name: 'src',
-      path: '/x/src',
-      isDir: true,
-      kind: 'terraform',
-      size: 1,
-      files: 1,
-      group: '/x',
-    }),
+    assertSafe({ ...base, name: 'src', path: '/x/src', isDir: true }),
   );
-  // Valid target should not throw.
+  // Valid target directory should not throw.
   assert.doesNotThrow(() =>
-    assertSafe({
-      name: '.terraform',
-      path: '/x/.terraform',
-      isDir: true,
-      kind: 'terraform',
-      size: 1,
-      files: 1,
-      group: '/x',
-    }),
+    assertSafe({ ...base, name: '.terraform', path: '/x/.terraform', isDir: true }),
   );
 });
 
@@ -111,9 +97,10 @@ test('clean continues after a failure', async () => {
       name: 'main.tf',
       path: path.join(root, 'payment-api', 'main.tf'),
       isDir: false,
-      kind: 'lock-file',
+      kind: 'terraform',
       size: 10,
       files: 1,
+      mtimeMs: 0,
       group: path.join(root, 'payment-api'),
     };
     const summary = await clean([bad, ...items]);

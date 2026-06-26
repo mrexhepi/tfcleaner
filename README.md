@@ -3,10 +3,10 @@
 Find and **safely** clean Terraform/Terragrunt generated files and reclaim disk space.
 
 Terraform and Terragrunt scatter heavy generated folders across every project —
-`.terraform`, `.terragrunt-cache`, and `.terraform.lock.hcl`. Over time these can
-eat tens of gigabytes. `tfcleaner` scans your machine, shows you exactly how much
-each one is costing you, and lets you wipe them with a keystroke — without ever
-touching your `.tf` source, `.tfvars`, or state files.
+`.terraform` and `.terragrunt-cache`. Over time these can eat tens of gigabytes.
+`tfcleaner` scans your machine, shows you exactly how much each one is costing you,
+and lets you wipe them with a keystroke — without ever touching your `.tf` source,
+`.tfvars`, state files, or `.terraform.lock.hcl` lock files.
 
 ## Install
 
@@ -47,14 +47,13 @@ Terraform Cleaner
 Reclaimable: 12.8 GB   Selected: 2 item(s) 6.3 GB
 
 /Users/me/projects/payment-api
- ❯ [x] .terragrunt-cache       4.2 GB  15234 files
-   [ ] .terraform              600 MB  812 files
-   [ ] .terraform.lock.hcl      20 KB  1 files
+ ❯ ◉ ◆ .terragrunt-cache   ████████████   4.2 GB  15234f  2d
+   ◯ ▲ .terraform          ██··········   600 MB  812f    3mo
 
 /Users/me/projects/auth-service
-   [x] .terragrunt-cache       2.1 GB  9001 files
+   ◉ ◆ .terragrunt-cache   ██████······   2.1 GB  9001f   5mo
 
-↑/↓ navigate · space select · a select all · c clean selected · q quit
+↑↓ move · g/G ends · space pick · a all · c clean · q quit
 ```
 ## Commands
 
@@ -70,7 +69,6 @@ Reclaimable: 12.8 GB   Selected: 2 item(s) 6.3 GB
 | Option | Description |
 | --- | --- |
 | `-p, --path <dir...>` | One or more directories to scan (overrides config). |
-| `--include-lock-files` | Also target `.terraform.lock.hcl` files. |
 | `--min-size <mb>` | Hide items smaller than this many MB. Defaults to `1`; use `0` to show everything. |
 | `-v, --version` | Print version. |
 
@@ -99,9 +97,9 @@ By default `tfcleaner` scans your **current directory** and **home directory** f
 
 - `.terragrunt-cache` directories
 - `.terraform` directories
-- `.terraform.lock.hcl` files _(only with `--include-lock-files`)_
 
 It skips `.git`, `node_modules`, `vendor`, `dist`, and `build` while scanning.
+Lock files (`.terraform.lock.hcl`) are intentionally never scanned or deleted.
 
 ## Configuration
 
@@ -118,24 +116,25 @@ Create a `~/.tfcleanerrc` (JSON) to customize scan paths and ignore rules:
 
 ## Safety
 
-`tfcleaner` is conservative by design. It will **only** ever delete:
+`tfcleaner` is conservative by design. It will **only** ever delete these two
+generated directories:
 
 - `.terragrunt-cache` directories
 - `.terraform` directories
-- `.terraform.lock.hcl` files — and only when you pass `--include-lock-files`
 
-It will **never** delete:
+It will **never** delete any file, including:
 
+- `.terraform.lock.hcl` lock files
 - `*.tf` source files
 - `*.tfvars` variable files
 - `terraform.tfstate`
 - `terraform.tfstate.backup`
 
 Every deletion passes through a final safety guard (`assertSafe`) that rejects
-anything outside the allowed set, regardless of how it was selected. Symlinks are
-counted but never followed, so a link can't trick the tool into deleting a target.
-If one item fails (permission denied, broken symlink, vanished folder), the rest
-still get cleaned and the failure is reported at the end.
+**any file** and any directory outside the two allowed names, regardless of how it
+was selected. Symlinks are counted but never followed, so a link can't trick the
+tool into deleting a target. If one item fails (permission denied, broken symlink,
+vanished folder), the rest still get cleaned and the failure is reported at the end.
 
 ## Development
 

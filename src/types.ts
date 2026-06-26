@@ -2,7 +2,7 @@
  * Shared types for tfcleaner.
  */
 
-export type ItemKind = 'terragrunt-cache' | 'terraform' | 'lock-file';
+export type ItemKind = 'terragrunt-cache' | 'terraform';
 
 /** A single reclaimable item discovered by the scanner. */
 export interface CleanItem {

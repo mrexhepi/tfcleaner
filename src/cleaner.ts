@@ -9,17 +9,21 @@ import type { CleanItem, CleanResult } from './types.js';
 const FORBIDDEN_BASENAMES = new Set([
   'terraform.tfstate',
   'terraform.tfstate.backup',
+  // Lock files are never deletable by this tool.
+  '.terraform.lock.hcl',
 ]);
 
 const FORBIDDEN_EXTENSIONS = new Set(['.tf', '.tfvars']);
 
+// tfcleaner only ever deletes these generated directories. Nothing else —
+// and never any file (lock files, state files, sources are all protected).
 const ALLOWED_DIRS = new Set(['.terragrunt-cache', '.terraform']);
-const ALLOWED_FILES = new Set(['.terraform.lock.hcl']);
 
 /**
  * Guard: confirm an item is safe to delete. Throws if it violates safety
  * rules. This is the last line of defense regardless of how the item was
- * selected.
+ * selected. Only generated directories are ever allowed; files are never
+ * deleted.
  */
 export function assertSafe(item: CleanItem): void {
   const base = path.basename(item.path);
@@ -32,14 +36,11 @@ export function assertSafe(item: CleanItem): void {
     throw new Error(`Refusing to delete source file: ${base}`);
   }
 
-  if (item.isDir) {
-    if (!ALLOWED_DIRS.has(base)) {
-      throw new Error(`Refusing to delete non-target directory: ${base}`);
-    }
-  } else {
-    if (!ALLOWED_FILES.has(base)) {
-      throw new Error(`Refusing to delete non-target file: ${base}`);
-    }
+  if (!item.isDir) {
+    throw new Error(`Refusing to delete file: ${base}`);
+  }
+  if (!ALLOWED_DIRS.has(base)) {
+    throw new Error(`Refusing to delete non-target directory: ${base}`);
   }
 }
 

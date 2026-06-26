@@ -15,7 +15,6 @@ import { formatBytes, formatAge } from './size.js';
 
 interface AppProps {
   config: TfCleanConfig;
-  includeLockFiles: boolean;
   minSize?: number;
 }
 
@@ -54,7 +53,6 @@ const KIND_META: Record<ItemKind, { label: string; icon: string; color: string }
   {
     'terragrunt-cache': { label: '.terragrunt-cache', icon: '◆', color: 'magenta' },
     terraform: { label: '.terraform', icon: '▲', color: 'cyan' },
-    'lock-file': { label: '.terraform.lock.hcl', icon: '◈', color: 'yellow' },
   };
 
 function buildRows(items: CleanItem[]): Row[] {
@@ -102,7 +100,6 @@ function visibleRowCount(): number {
 
 export function App({
   config,
-  includeLockFiles,
   minSize = 0,
 }: AppProps): React.JSX.Element {
   const { exit } = useApp();
@@ -156,7 +153,7 @@ export function App({
     let cancelled = false;
     (async () => {
       try {
-        const found = await scan(config, { includeLockFiles, minSize });
+        const found = await scan(config, { minSize });
         if (cancelled) return;
         setItems(found);
         const builtRows = buildRows(found);
@@ -173,7 +170,7 @@ export function App({
     return () => {
       cancelled = true;
     };
-  }, [config, includeLockFiles, minSize]);
+  }, [config, minSize]);
 
   const isLive = (p: string) => !deleted.has(p);
 

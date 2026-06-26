@@ -23,7 +23,6 @@ const VERSION: string = (require('../package.json') as { version: string })
 
 interface CommonOpts {
   path?: string[];
-  includeLockFiles?: boolean;
   minSize?: string;
 }
 
@@ -39,7 +38,6 @@ function minSizeBytes(opts: CommonOpts): number {
 const KIND_LABEL: Record<string, string> = {
   'terragrunt-cache': '.terragrunt-cache',
   terraform: '.terraform',
-  'lock-file': '.terraform.lock.hcl',
 };
 
 /** Print a grouped, human-friendly listing of found items. */
@@ -76,7 +74,6 @@ async function doScan(opts: CommonOpts): Promise<CleanItem[]> {
   }).start();
   try {
     const items = await scan(config, {
-      includeLockFiles: opts.includeLockFiles,
       minSize: minSizeBytes(opts),
     });
     spinner.stop();
@@ -99,11 +96,6 @@ export function buildProgram(): Command {
     .option(
       '-p, --path <dir...>',
       'directories to scan (repeatable; overrides config)',
-    )
-    .option(
-      '--include-lock-files',
-      'also target .terraform.lock.hcl files',
-      false,
     )
     .option(
       '--min-size <mb>',
@@ -149,7 +141,6 @@ function runInteractive(opts: CommonOpts): void {
       const { waitUntilExit } = render(
         React.createElement(App, {
           config,
-          includeLockFiles: Boolean(opts.includeLockFiles),
           minSize: minSizeBytes(opts),
         }),
       );

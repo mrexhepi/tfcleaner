@@ -25,15 +25,16 @@ test('finds .terraform and .terragrunt-cache directories', async () => {
   }
 });
 
-test('excludes lock files by default, includes them with flag', async () => {
+test('never includes .terraform.lock.hcl files', async () => {
   const root = await makeTmp();
   try {
     await buildFixture(root);
-    const without = await scan(cfg(root));
-    assert.ok(!without.some((i) => i.kind === 'lock-file'));
-
-    const withLock = await scan(cfg(root), { includeLockFiles: true });
-    assert.ok(withLock.some((i) => i.kind === 'lock-file'));
+    const items = await scan(cfg(root));
+    assert.ok(
+      !items.some((i) => i.path.endsWith('.terraform.lock.hcl')),
+      'lock files must never be scanned',
+    );
+    assert.ok(items.every((i) => i.isDir), 'only directories are targeted');
   } finally {
     await fs.remove(root);
   }
